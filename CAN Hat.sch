@@ -12075,6 +12075,9 @@ Switches electronic signals</description>
 <part name="R9" library="resistor" deviceset="R-US_" device="R1206"/>
 <part name="C5" library="resistor" deviceset="C-EU" device="C1206"/>
 <part name="R10" library="resistor" deviceset="R-US_" device="R1206"/>
+<part name="J8" library="SparkFun-Connectors" deviceset="CONN_02" device="3.5MM"/>
+<part name="SUPPLY24" library="supply2" deviceset="+5V" device=""/>
+<part name="SUPPLY25" library="supply2" deviceset="GND" device=""/>
 </parts>
 <sheets>
 <sheet>
@@ -12140,6 +12143,9 @@ Switches electronic signals</description>
 <instance part="R9" gate="G$1" x="160.02" y="38.1" rot="R180"/>
 <instance part="C5" gate="G$1" x="154.94" y="50.8" rot="R180"/>
 <instance part="R10" gate="G$1" x="154.94" y="43.18" rot="R270"/>
+<instance part="J8" gate="G$1" x="55.88" y="81.28"/>
+<instance part="SUPPLY24" gate="+5V" x="63.5" y="86.36"/>
+<instance part="SUPPLY25" gate="GND" x="63.5" y="78.74"/>
 </instances>
 <busses>
 </busses>
@@ -12221,6 +12227,10 @@ Switches electronic signals</description>
 <pinref part="J7" gate="G$1" pin="1"/>
 <pinref part="SUPPLY23" gate="GND" pin="GND"/>
 </segment>
+<segment>
+<pinref part="J8" gate="G$1" pin="1"/>
+<pinref part="SUPPLY25" gate="GND" pin="GND"/>
+</segment>
 </net>
 <net name="+5V" class="0">
 <segment>
@@ -12266,6 +12276,10 @@ Switches electronic signals</description>
 <pinref part="R3" gate="G$1" pin="2"/>
 <wire x1="45.72" y1="22.86" x2="40.64" y2="22.86" width="0.1524" layer="91"/>
 <pinref part="SUPPLY22" gate="+5V" pin="+5V"/>
+</segment>
+<segment>
+<pinref part="J8" gate="G$1" pin="2"/>
+<pinref part="SUPPLY24" gate="+5V" pin="+5V"/>
 </segment>
 </net>
 <net name="N$3" class="0">
