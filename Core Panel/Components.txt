@@ -1,0 +1,31 @@
+# Core Panel
+ - Use GR3166A grommets
+ 
+## RoboRIO
+### Power
+ - Voltage & current monitoring
+ - PDP power or external power
+### CAN
+ - In/out switch
+
+### Ethernet 
+
+## PCM
+ - CAN in/out switch
+### Compressor
+ - Simulate with resistors
+ - Open or shorted faults
+ - Indicator light
+### Solenoids
+ - Simulate with resistors
+ - Indicator lights
+ - Maybe 1 or 2 with fault switches
+ 
+## PDP
+ - CAN in/out switch
+ 
+## Radio
+### Power
+ - Barrel jack input (w/ switch, current monitoring)
+ - PoE input (w/ switch, current monitoring)
+ 
