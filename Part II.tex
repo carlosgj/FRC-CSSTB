@@ -1,0 +1,147 @@
+\documentclass[12pt]{article}
+\usepackage{fullpage}
+%\usepackage{fancyhdr}
+\usepackage{color}
+\usepackage{pdfpages}
+\usepackage{hyperref}
+\usepackage{longtable}
+
+\hypersetup{
+	colorlinks=true,
+	linkcolor=black,
+	filecolor=magenta,      
+	urlcolor=blue,
+	citecolor=blue,
+}
+
+%\pagestyle{fancy}
+
+\begin{document}
+	\begin{titlepage}
+	\begin{center}
+		
+	
+	\vspace*{1in}
+	{\Huge \textbf{FRC Advanced Control System Development: Part II}}\\
+	\vspace{0.25in}
+	{\LARGE Proposed CCSDS Extensions for FRC}\\
+	\vspace{0.5in}
+	{\Large Carlos Gross Jones}\\
+	\vspace{0.1in}
+	{\Large FRC Team 696}\\
+	\vspace{0.1in}
+	{\Large \today}\\
+\end{center}
+	
+\end{titlepage}
+
+
+\section{Introduction}
+\par In Part I of this series, I demonstrated a proof-of-concept system to stream telemetry from a RoboRIO encapsulated as CCSDS Space Packet Protocol (and further transported as UDP). In this paper, I will propose a standard for how certain aspects of CCSDS SPP should be used in an FRC environment. 
+\par The reader is encouraged to first become familiar with at least reference \cite{SPP}.
+
+\section{Overview}
+\par CCSDS 133.0-B-1 \cite{SPP} specifies a general protocol for telemetry and telecommand packets to remote systems. However, it leaves many aspects (such as inclusion of a secondary header, and specific APIDs) up to the implementer. This whitepaper recommends some specific values and implementations for space packets used in the \textit{FIRST} Robotics Competition. 
+
+\section{Application Identifier}
+\par CCSDS 133.0-B-1 reserves APID value 0x7FF for idle packets. Additionally, the Space Assigned Numbers Authority reserves APIDs 0x7FC and 0x7FD for LTP and CFDP, respectively. Since the FRC SPP packets are never expected to intermingle with those used in actual space applications, the SANA reservations will be disregarded. The idle packet APID, however, will be respected. Table \ref{tab:apids} (App. \ref{app:APIDs}) defines recommended APIDs for FRC use. APIDs marked as RESERVED do not yet have any assigned use, but should not be used. Teams may internally allocate the APIDs marked ``Team Use'' as they desire. 
+\par Note that the intent of APIDs is to be \textit{routing addresses} to properly deliver messages to processes, not necessarily to convey information about the content of the message. Therefore, for example, a stream of telemetry coming from a motor controller would be expected to have the same APID as the telecommands going to the motor controller. Similarly, the telemetry streams coming from two different but identical motor controllers would have different APIDs, even if they are using identical message formats. The mechanism to convey information about the message type and structure is provided by the \textit{data format identifier} (\S \ref{sec:DFI}).
+
+\section{Time Code Field}
+\label{sec:TC}
+\par Reference \cite{TCF} gives suggested time code formats for use in the SPP secondary header (among other applications). In order to give maximum bit efficiency, as well as easy conversion with Unix time, the CCSDS Unsegmented Time Code (CUC) is recommended.
+\par For commonality, the January 1, 1958 epoch should be used. Four octets of the basic time unit (second) should be used, i.e., a 32-bit unsigned integer number of seconds since January 1, 1958. Additionally, three octets of fractional time are recommended. (This implies that the minimum representable time delta is $1/2^{24}\approx 59.6$ ns.) Thus, the timecode can be converted to Unix time by subtracting 378691200 seconds (the interval between January 1, 1958 and January 1, 1970). All together, the timecode P-field should be 0x1F.
+
+\section{Data Format Identifier}
+\label{sec:DFI}
+\par The recommended Ancillary Data Field of the secondary header consists of three octets, which together identify the packet data format. (In this context, ``format'' refers to the meaning and binary packing of data in the User Data Field.) The first two octets make up a 16-bit unsigned integer, which identifies the type of packet. The third octet is used to convey the packet type version. This value should initially be 0, for newly-defined packet types. When the packet format is updated (for example, to add additional information, or to modify the packing definition), the packet format version should be incremented. DFI definitions are left up to the authors of processes. However, \textit{suggested} definitions for DFI types 0-2 are given in App. \ref{app:DFI}.
+
+\newpage
+\appendix
+\section{Recommended APID Allocations}
+\label{app:APIDs}
+\begin{longtable}{|c|l|p{2in}|}
+	\hline
+	\textbf{APID} & \textbf{Usage} & \textbf{Notes}\\ \hline
+	0x000 & RESERVED &\\ \hline
+	0x001 & RoboRIO OS & Intended for core OS telemetry (CPU/memory usage, free NVRAM space, etc.) and commands (shutdown, etc.)\\ \hline
+	0x002 & RoboRIO Shell & Intended to provide a shell interface to RoboRIO OS (command packets send STDIN, telemetry packets send STDOUT)\\ \hline
+	0x003 & RESERVED &\\ \hline
+	0x004 & RESERVED &\\ \hline
+	0x005 & RESERVED &\\ \hline
+	0x006 & RESERVED &\\ \hline
+	0x007 & RESERVED &\\ \hline
+	0x008 & PDP 1 & \\ \hline
+	0x009 & RESERVED (PDP 2) & Reserved for telemetry from a second PDP, if ever allowed\\ \hline
+	0x00A & PCM 1 &\\ \hline
+	0x00B & PCM 2 &\\ \hline
+	0x00C & Radio 1 &\\ \hline
+	0x00D & Radio 2 & C\&T for a second radio, if ever allowed in games, or if a second radio is used in testing\\ \hline
+	0x00E & Infrastructure 1 & Ethernet switches etc.\\ \hline
+	0x00F & Infrastructure 2 & Ethernet switches etc.\\ \hline
+	0x010 & Infrastructure 3 & Ethernet switches etc.\\ \hline
+	0x011 & Infrastructure 4 & Ethernet switches etc.\\ \hline
+	0x012 & RESERVED &\\ \hline
+	0x013 & RESERVED &\\ \hline
+	0x014 & RESERVED &\\ \hline
+	0x015 & RESERVED &\\ \hline
+	0x016 & CAN Interface 1 & For CAN bus monitors such as Microchip Can Bus Analyzer, PiCAN, CANable, etc. \\ \hline
+	0x017 & CAN Interface 2 & For CAN bus monitors such as Microchip Can Bus Analyzer, PiCAN, CANable, etc. \\ \hline
+	0x018 & RESERVED &\\ \hline
+	0x019 & RESERVED &\\ \hline
+	0x01A & RESERVED &\\ \hline
+	0x01B & RESERVED &\\ \hline
+	0x01C & RESERVED &\\ \hline
+	0x01D & RESERVED &\\ \hline
+	0x01E & RESERVED &\\ \hline
+	0x01F & RESERVED &\\ \hline
+	0x020 & Motor Controller 1 & For Talon SRX, Spark MAX, etc. Note that the process pertains to motor controller C\&T, but may not actually run on the motor controller.\\ \hline
+	0x021 & Motor Controller 2 & For Talon SRX, Spark MAX, etc. Note that the process pertains to motor controller C\&T, but may not actually run on the motor controller.\\ \hline
+	0x022 & Motor Controller 3 & For Talon SRX, Spark MAX, etc. Note that the process pertains to motor controller C\&T, but may not actually run on the motor controller.\\ \hline
+	0x023 & Motor Controller 4 & For Talon SRX, Spark MAX, etc. Note that the process pertains to motor controller C\&T, but may not actually run on the motor controller.\\ \hline
+	0x024 & Motor Controller 5 & For Talon SRX, Spark MAX, etc. Note that the process pertains to motor controller C\&T, but may not actually run on the motor controller.\\ \hline
+	0x025 & Motor Controller 6 & For Talon SRX, Spark MAX, etc. Note that the process pertains to motor controller C\&T, but may not actually run on the motor controller.\\ \hline
+	0x026 & Motor Controller 7 & For Talon SRX, Spark MAX, etc. Note that the process pertains to motor controller C\&T, but may not actually run on the motor controller.\\ \hline
+	0x027 & Motor Controller 8 & For Talon SRX, Spark MAX, etc. Note that the process pertains to motor controller C\&T, but may not actually run on the motor controller.\\ \hline
+	0x028 & Motor Controller 9 & For Talon SRX, Spark MAX, etc. Note that the process pertains to motor controller C\&T, but may not actually run on the motor controller.\\ \hline
+	0x029 & Motor Controller 1 & For Talon SRX, Spark MAX, etc. Note that the process pertains to motor controller C\&T, but may not actually run on the motor controller.\\ \hline
+	0x02A & Motor Controller 11 & For Talon SRX, Spark MAX, etc. Note that the process pertains to motor controller C\&T, but may not actually run on the motor controller.\\ \hline
+	0x02B & Motor Controller 12 & For Talon SRX, Spark MAX, etc. Note that the process pertains to motor controller C\&T, but may not actually run on the motor controller.\\ \hline
+	0x02C & Motor Controller 13 & For Talon SRX, Spark MAX, etc. Note that the process pertains to motor controller C\&T, but may not actually run on the motor controller.\\ \hline
+	0x02D & Motor Controller 14 & For Talon SRX, Spark MAX, etc. Note that the process pertains to motor controller C\&T, but may not actually run on the motor controller.\\ \hline
+	0x02E & Motor Controller 15 & For Talon SRX, Spark MAX, etc. Note that the process pertains to motor controller C\&T, but may not actually run on the motor controller.\\ \hline
+	0x02F & Motor Controller 16 & For Talon SRX, Spark MAX, etc. Note that the process pertains to motor controller C\&T, but may not actually run on the motor controller.\\ \hline
+	0x030-0x0FF & RESERVED &\\ \hline
+	0x100-0x7FE & Team Use & May be used by teams as desired. If a particular process is likely to be used by many teams, it should be incorporated into the 0x000-0x0FF range. \\ \hline
+	0x7FF & Idle Packet & As defined by CCSDS 133.0-B-1\\ \hline
+	\caption{Recommended APIDs for FRC use} % needs to go inside longtable environment
+	\label{tab:apids}
+\end{longtable}
+
+\section{Suggested Data Format Identifiers}
+\label{app:DFI}
+\subsection{No-Op}
+\textbf{DFI:} 0x0000\\
+Should only be sent as telecommand. Should have no effect except to elicit an ACK. No user data. 
+
+\subsection{Acknowledge (ACK)}
+\textbf{DFI:} 0x0001\\
+Should only be sent as telemetry. Used to acknowledge a received message. No user data.
+
+\subsection{Negative Acknowledge (NACK)}
+\textbf{DFI:} 0x0002\\
+Should only be sent as telemetry. Used to indicate that a message was received, but was in some way bad; for example, NACK may be sent by a process in response to a telecommand message which was properly received, but which specified a command that the process does not implement. No user data.
+
+\newpage
+\begin{thebibliography}{9}
+	\bibitem{SPP}
+	\textit{Space Packet Protocol}. Recommendation for Space Data Systems Standards, CCSDS
+	133.0-B-1. Blue Book. Issue 1. Washington, D.C.: CCSDS, September 2003. 
+	
+	\bibitem{TCF}
+	\textit{Time Code Formats}. Recommendation for Space Data Systems Standards, CCSDS
+	301.0-B-4. Blue Book. Issue 4. Washington, D.C.: CCSDS, November 2010. 
+\end{thebibliography}
+
+
+\end{document}
