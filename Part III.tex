@@ -1,0 +1,65 @@
+\documentclass[12pt]{article}
+\usepackage{fullpage}
+%\usepackage{fancyhdr}
+\usepackage{color}
+\usepackage{pdfpages}
+\usepackage{hyperref}
+\usepackage{longtable}
+
+\hypersetup{
+	colorlinks=true,
+	linkcolor=black,
+	filecolor=magenta,      
+	urlcolor=blue,
+	citecolor=blue,
+}
+
+%\pagestyle{fancy}
+
+\begin{document}
+	\begin{titlepage}
+	\begin{center}
+		
+	
+	\vspace*{1in}
+	{\Huge \textbf{FRC Advanced Control System Development: Part III}}\\
+	\vspace{0.25in}
+	{\LARGE Using the Dynamic Loader for Evil}\\
+	\vspace{0.5in}
+	{\Large Carlos Gross Jones}\\
+	\vspace{0.1in}
+	{\Large FRC Team 696}\\
+	\vspace{0.1in}
+	{\Large \today}\\
+\end{center}
+	
+\end{titlepage}
+
+
+\section{Introduction}
+\par As discussed in my previous and future whitepapers, I am developing a generalized command and telemetry system for FRC robots. Currently, I have prototype software which runs on the RoboRIO (independently of the ``main'' robot code) and streams CAN frames back to a telemetry computer over Ethernet. This provides complete telemetry from the PDP, PCM, and Spark Max motor controllers at close to zero overhead (the status messages are being broadcast on the CAN bus anyway, and the streaming code doesn't require much CPU time or memory). 
+\par However, Talon SRX telemetry has proven more difficult, as CTRE has chosen to obfuscate or encrypt the SRX CAN frames (as discussed here \url{https://www.chiefdelphi.com/t/sparkmax-following-loadless-talon/357718} as well as a few other Chief Delphi threads). In this paper, I will discuss a successfully prototyped method for running a ``phantom'' instance of the Phoenix Framework on the RoboRIO, to allow out-of-band telemetry until an attack on the new Talon SRX CAN format is complete. 
+
+\section{Motivation}
+\label{sec:motivation}
+\par The simplest way to retrieve telemetry from Talon SRXs is what many teams already do: read the desired information using the Phoenix-provided functions, and send that back to (usually) the driver station using NetworkTables, ROS messages, \texttt{printf} statements, or some other means.
+\par I prefer to avoid this method for several reasons. First of all, sending hardware telemetry from separate processes on the RoboRIO means that the complexity of the telemetry code can be excluded from the main robot code. The standalone telemetry binaries, which execute as their own processes, do not incur the additional complexity involved with git submodules or Gradle multiproject builds. Secondarily, one of the many lessons learned from past flight anomalies at JPL is that the process of generating and transmitting telemetry should be as independent as possible, to improve the chances of receiving telemetry diagnosing a major fault. In JPL parlance, the telemetry pipeline should be its own fault containment region. In the FRC context, this means that, should the main robot code crash, experience major lag, etc., it is desirable for the telemetry process to remain unaffected, so that it can provide clues to the causes of the fault. 
+
+\section{Overview}
+\par As discussed above, I consider the CAN frames used by the current SRX firmware to be a black box: they encode meaningful information, but that information can only be extracted by the Phoenix Framework (more specifically, the CCI component)\footnote{I suspect that the actual CAN frames can eventually be decoded through cryptanalytic attack on the data itself, dissection of \texttt{libCTRE\_PhoenixCCI.so}, or some other means. However, that is beyond the scope of this paper.}. In combination with the desire for independent processes discussed in \S \ref{sec:motivation}, this means that a Phoenix instance must be running on the RoboRIO alongside the one created by the main robot code, purely to decode incoming SRX status frames. 
+
+\section{The Shim}
+\par It is in fact quite easy to simply build telemetry code with the CTRE dependencies, and use the normal Phoenix functions to retrieve the status data. This is, essentially, the normal robot code build process, except that the resulting artifact is deployed to a different location on the RoboRIO. This works perfectly well in isolation: the telemetry process can successfully receive data from the Talons, and transmit it to the telemetry computer. However, it does not cooperate peacefully with the Phoenix instance compiled into the main robot code. There are two major conflicts. First of all, the two different Phoenix instances are transmitting different, contradictory commands to the Talons. The second reason is due to the way that \texttt{CANSessionMux.h} implements \texttt{receiveMessage}. It seems that \texttt{receiveMessage} does not act as a multiplexer; that is, if an incoming message matches multiple \texttt{receiveMessage} calls, the message will be returned to only one of them. (Presumably, any applications which require nondestructive receipt of messages are expected to use the \texttt{StreamSession} functions.) Therefore, when trying to run a telemetry Phoenix instance and a robot code Phoenix instance at the same time, each inbound message is received by only one of them, causing errors. 
+\par In order to run the two Phoenix instances alongside each other (one normal instance in the main robot code, and one instance for telemetry in a kind of ``read-only'' mode), there are two challenges that must be overcome: preventing the telemetry instance from transmitting on the CAN bus, and allowing the telemetry instance to read CAN messages without denying them to the main instance. In fact, both of these can be accomplished by manipulating a single interface. First, however, I will briefly describe the Linux shared object architecture. 
+
+
+\newpage
+\appendix
+
+\newpage
+\begin{thebibliography}{9}
+
+\end{thebibliography}
+
+
+\end{document}
